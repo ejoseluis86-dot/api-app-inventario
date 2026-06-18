@@ -1,0 +1,266 @@
+import json
+#esto es para el error de seguridad 
+from django.views.decorators.csrf import csrf_exempt
+from django.http import HttpResponse, JsonResponse
+from .models import ConsumoRealInsumo, DetallePedido, DetalleReceta, Insumo, Pedido, Producto
+
+#1 Lista Get
+def listaInsumos(request):
+    insumos = list(Insumo.objects.values())
+    return JsonResponse(insumos, safe=False)
+
+#2 modificar Stock por id_insumo en la url
+
+@csrf_exempt
+def modificarInsumo(request, id_insumo):
+    print("METODO:", request.method)
+    if request.method != 'PUT':
+        return JsonResponse({'error': 'Metodo no permitido'}, status=405)
+
+    try:
+        #sacamos Stock del Body
+        data = json.loads(request.body)
+        #traemos el Insumo de la base de Datos
+        insumo = Insumo.objects.get(id = id_insumo)
+        #Actualizamos stock
+        insumo.stock = data['stock']
+        insumo.save()
+
+        return JsonResponse({
+            'insumo con id': insumo.id,
+            'mensaje': 'Stock actualizado correctamente',
+            'stock': insumo.stock
+        })
+
+    except Insumo.DoesNotExist:
+        return JsonResponse({'error': 'Insumo no encontrado'}, status=404)
+
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=400)
+
+@csrf_exempt
+def crearInsumo(request):
+    
+    if request.method != 'POST':
+        return JsonResponse(
+            {'error': 'El Metodo No Es Un POST'},
+            status=405
+    )
+
+    data = json.loads(request.body)
+    insumo = Insumo.objects.create(
+    nombre=data['nombre'],
+    categoria=data['categoria'],
+    stock=data['stock'],
+    ubicacion=data['ubicacion']
+    )
+    return JsonResponse(
+    {
+        'id': insumo.id,
+        'mensaje': 'Insumo creado correctamente'
+    },
+    status=201
+    )
+
+#4 gregar un producto con detalles
+@csrf_exempt
+def crearProducto(request):
+    # Verificar que el método sea POST
+    print("METODO:", request.method)
+    if request.method != 'POST':
+        return JsonResponse(
+            {'error': 'Metodo no permitido'},
+            status=405
+        )
+
+    # Convertir el JSON recibido en el body a un diccionario Python
+    data = json.loads(request.body)
+
+    # Crear el producto en la base de datos
+    producto = Producto.objects.create(
+        nombre=data['nombre'],
+        precio=data['precio'],
+        categoria=data['categoria']
+    )
+
+    # Recorrer la lista de detalles enviada en el JSON
+    for detalle in data['detalles']:
+
+        # Buscar el insumo por su id
+        insumo = Insumo.objects.get(
+            id=detalle['insumo_id']
+        )
+
+        # Crear un detalle de receta
+        DetalleReceta.objects.create(
+            # Relacionar con el producto recién creado
+            producto=producto,
+
+            # Relacionar con el insumo encontrado
+            insumo=insumo,
+
+            # Guardar la cantidad teórica
+            cantidadTeorica=detalle['cantidadTeorica']
+        )
+    # Devolver respuesta de éxito
+    return JsonResponse(
+        {
+            'id_producto': producto.id,
+            'mensaje': 'Producto creado correctamente'
+        },
+        status=201
+    )
+
+#5 lista de productoLite
+def listaProductos(request):
+    
+    productos = list(
+        Producto.objects.values(
+            'id',
+            'nombre',
+            'precio'
+        )
+    )
+
+    return JsonResponse(productos, safe=False)
+
+#6 crear un consumo real
+@csrf_exempt
+def crearConsumo(request):
+    if request.method != 'POST':
+        return JsonResponse(
+            {'error': 'Metodo no permitido'},
+            status=405
+        )
+    try:
+        data = json.loads(request.body)
+        detalle= DetallePedido.objects.get(pk=data['detallePedido_id'])
+        print(detalle)
+        insumo= Insumo.objects.get(pk=data['insumo_id'])
+        print(insumo)
+        consumo = ConsumoRealInsumo.objects.create(
+            cantidadReal=data['cantidadReal'],
+            detallePedido= detalle,
+            insumo=insumo
+        )
+
+        return JsonResponse({
+            'id': consumo.id,
+            'id_detalle': consumo.detallePedido.pk
+        }, status=201)
+
+    except Exception as e:
+        return JsonResponse({
+            'error el detalle o el insumo no existe': str(e)
+        }, status=500)
+
+#7 crear pedido
+@csrf_exempt
+def crearPedido(request):
+    # Verificar que el método sea POST
+    print("METODO:", request.method)
+    if request.method != 'POST':
+        return JsonResponse(
+            {'error': 'Metodo no permitido'},
+            status=405
+        )
+
+    # Convertir el JSON recibido en el body a un diccionario Python
+    data = json.loads(request.body)
+
+    # Crear el pedido en la base de datos
+    pedido = Pedido.objects.create(
+        fecha=data['fecha'],
+        cliente=data['cliente'],
+        usuario_id=data['usuario']
+    )
+
+    # Recorrer la lista de detalles enviada en el JSON esto talvez se modifique
+    for detalle in data['detalles']:
+        print(detalle)
+        # Crear un detalle de receta
+        DetallePedido.objects.create(
+            cantidad = detalle['cantidad'],
+            precioUnitario =detalle['precio'],
+            descuento = detalle['descuento'],
+            pedido = pedido ,
+            producto_id = detalle['producto_id'],
+        )
+    # Devolver respuesta de éxito
+    return JsonResponse(
+        {
+            'id_pedido': pedido.id,
+            'mensaje': 'Pedido creado correctamente'
+        },
+        status=201
+    )
+
+
+#8 lista de pedidosLite sin terminar cuyo atributo bool sea false
+def pedidosSinTerminar(request):
+    pedidos = Pedido.objects.filter(terminado=False)
+
+    data = []
+
+    for pedido in pedidos:
+        data.append({
+            'id': pedido.id,
+            'cliente': pedido.cliente,
+            'fecha': pedido.fecha,
+        })
+
+    return JsonResponse(data, safe=False)
+
+#9 lista de pedidosLite terminados cuyo atributo bool sea true
+def pedidosTerminados(request):
+    pedidos = Pedido.objects.filter(terminado=True)
+
+    data = []
+
+    for pedido in pedidos:
+        data.append({
+            'id': pedido.id,
+            'cliente': pedido.cliente,
+            'fecha': pedido.fecha,
+        })
+
+    return JsonResponse(data, safe=False)
+
+#10 lista de consumos Reales por id_pedido
+def consumosDelDetalle(request, id_detalle):
+    consumos = ConsumoRealInsumo.objects.filter(
+        detallePedido_id=id_detalle
+    )
+
+    data = []
+
+    for consumo in consumos:
+        data.append({
+            'id': consumo.id,
+            'cantidadReal': consumo.cantidadReal,
+            'insumo_id': consumo.insumo_id
+        })
+
+    return JsonResponse(data, safe=False)
+
+#11 lista de DetallePedido por id_pedido
+def  detallesPedido(request, id_pedido):
+    detalles = DetallePedido.objects.filter(
+        pedido_id=id_pedido
+    ).values()
+
+    return JsonResponse(list(detalles), safe=False)
+
+#12 lista de DetalleReceta por id_producto
+def detallesReceta(request, id_producto):
+    detalles = DetalleReceta.objects.filter(
+        producto_id = id_producto
+    ).values()
+
+    return JsonResponse(list(detalles), safe=False)
+
+#13 cambiar estado del pedido a true
+def cambiarEstadoPedido(request, id_pedido):
+    pedido = Pedido.objects.get(id=id_pedido)
+    pedido.terminado= True
+    pedido.save
