@@ -1,0 +1,72 @@
+# ==========================
+# Entornos virtuales
+# ==========================
+venv/
+.venv/
+env/
+
+# ==========================
+# Python
+# ==========================
+__pycache__/
+*.py[cod]
+*$py.class
+
+# ==========================
+# Django
+# ==========================
+db.sqlite3
+db.sqlite3-journal
+
+# Archivos estáticos generados
+staticfiles/
+
+# Archivos subidos por usuarios
+media/
+
+# ==========================
+# Variables de entorno
+# ==========================
+.env
+.env.*
+
+# ==========================
+# Logs
+# ==========================
+*.log
+
+# ==========================
+# Tests y cobertura
+# ==========================
+.coverage
+htmlcov/
+.pytest_cache/
+
+# ==========================
+# VS Code
+# ==========================
+.vscode/
+
+# ==========================
+# IntelliJ IDEA / PyCharm
+# ==========================
+.idea/
+
+# ==========================
+# Sistema operativo
+# ==========================
+.DS_Store
+Thumbs.db
+
+# ==========================
+# Distribución y empaquetado
+# ==========================
+build/
+dist/
+*.egg-info/
+
+# ==========================
+# Archivos temporales
+# ==========================
+*.tmp
+*.swp
