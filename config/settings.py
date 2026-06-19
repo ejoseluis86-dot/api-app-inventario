@@ -37,7 +37,8 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'Insumo'
+    'Insumo',
+    'rest_framework',
 ]
 
 MIDDLEWARE = [
@@ -99,7 +100,14 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
+AUTH_USER_MODEL = 'Insumo.Usuario'
 
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ),
+}
 # Internationalization
 # https://docs.djangoproject.com/en/6.0/topics/i18n/
 

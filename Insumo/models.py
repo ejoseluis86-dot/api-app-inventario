@@ -64,10 +64,10 @@ class DetalleReceta(models.Model):
 
 
 #clase 7
-class Usuario(models.Model):
-    nombre = models.CharField(max_length=100)
-    email = models.EmailField(unique=True)
-    password = models.CharField(max_length=255)
+from django.contrib.auth.models import AbstractUser
+from django.db import models
+
+class Usuario(AbstractUser):
 
     ROLES = [
         ('ADMIN', 'Administrador'),
@@ -76,5 +76,6 @@ class Usuario(models.Model):
 
     rol = models.CharField(
         max_length=5,
-        choices=ROLES
+        choices=ROLES,
+        default='EMPL'
     )

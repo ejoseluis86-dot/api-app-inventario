@@ -3,20 +3,23 @@ import json
 from django.views.decorators.csrf import csrf_exempt
 from django.http import HttpResponse, JsonResponse
 from .models import ConsumoRealInsumo, DetallePedido, DetalleReceta, Insumo, Pedido, Producto
+#esto es para los permisos de los endpoints
+from rest_framework.decorators import api_view, permission_classes
+from .permisos import EsAdminOEmpleado
+from .permisos import EsAdmin
 
 #1 Lista Get
+@api_view(['GET'])
+@permission_classes([EsAdminOEmpleado])
 def listaInsumos(request):
     insumos = list(Insumo.objects.values())
     return JsonResponse(insumos, safe=False)
 
 #2 modificar Stock por id_insumo en la url
-
+@api_view(['PUT'])
+@permission_classes([EsAdminOEmpleado])
 @csrf_exempt
 def modificarInsumo(request, id_insumo):
-    print("METODO:", request.method)
-    if request.method != 'PUT':
-        return JsonResponse({'error': 'Metodo no permitido'}, status=405)
-
     try:
         #sacamos Stock del Body
         data = json.loads(request.body)
@@ -37,15 +40,10 @@ def modificarInsumo(request, id_insumo):
 
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=400)
-
+@api_view(['POST'])
+@permission_classes([EsAdmin])
 @csrf_exempt
 def crearInsumo(request):
-    
-    if request.method != 'POST':
-        return JsonResponse(
-            {'error': 'El Metodo No Es Un POST'},
-            status=405
-    )
 
     data = json.loads(request.body)
     insumo = Insumo.objects.create(
@@ -63,16 +61,10 @@ def crearInsumo(request):
     )
 
 #4 gregar un producto con detalles
+@api_view(['POST'])
+@permission_classes([EsAdminOEmpleado])
 @csrf_exempt
 def crearProducto(request):
-    # Verificar que el método sea POST
-    print("METODO:", request.method)
-    if request.method != 'POST':
-        return JsonResponse(
-            {'error': 'Metodo no permitido'},
-            status=405
-        )
-
     # Convertir el JSON recibido en el body a un diccionario Python
     data = json.loads(request.body)
 
@@ -112,6 +104,8 @@ def crearProducto(request):
     )
 
 #5 lista de productoLite
+@api_view(['GET'])
+@permission_classes([EsAdminOEmpleado])
 def listaProductos(request):
     
     productos = list(
@@ -125,13 +119,10 @@ def listaProductos(request):
     return JsonResponse(productos, safe=False)
 
 #6 crear un consumo real
+@api_view(['POST'])
+@permission_classes([EsAdminOEmpleado])
 @csrf_exempt
 def crearConsumo(request):
-    if request.method != 'POST':
-        return JsonResponse(
-            {'error': 'Metodo no permitido'},
-            status=405
-        )
     try:
         data = json.loads(request.body)
         detalle= DetallePedido.objects.get(pk=data['detallePedido_id'])
@@ -155,16 +146,10 @@ def crearConsumo(request):
         }, status=500)
 
 #7 crear pedido
+@api_view(['POST'])
+@permission_classes([EsAdminOEmpleado])
 @csrf_exempt
 def crearPedido(request):
-    # Verificar que el método sea POST
-    print("METODO:", request.method)
-    if request.method != 'POST':
-        return JsonResponse(
-            {'error': 'Metodo no permitido'},
-            status=405
-        )
-
     # Convertir el JSON recibido en el body a un diccionario Python
     data = json.loads(request.body)
 
@@ -197,6 +182,8 @@ def crearPedido(request):
 
 
 #8 lista de pedidosLite sin terminar cuyo atributo bool sea false
+@api_view(['GET'])
+@permission_classes([EsAdminOEmpleado])
 def pedidosSinTerminar(request):
     pedidos = Pedido.objects.filter(terminado=False)
 
@@ -212,6 +199,8 @@ def pedidosSinTerminar(request):
     return JsonResponse(data, safe=False)
 
 #9 lista de pedidosLite terminados cuyo atributo bool sea true
+@api_view(['GET'])
+@permission_classes([EsAdminOEmpleado])
 def pedidosTerminados(request):
     pedidos = Pedido.objects.filter(terminado=True)
 
@@ -227,6 +216,8 @@ def pedidosTerminados(request):
     return JsonResponse(data, safe=False)
 
 #10 lista de consumos Reales por id_pedido
+@api_view(['GET'])
+@permission_classes([EsAdminOEmpleado])
 def consumosDelDetalle(request, id_detalle):
     consumos = ConsumoRealInsumo.objects.filter(
         detallePedido_id=id_detalle
@@ -244,6 +235,8 @@ def consumosDelDetalle(request, id_detalle):
     return JsonResponse(data, safe=False)
 
 #11 lista de DetallePedido por id_pedido
+@api_view(['GET'])
+@permission_classes([EsAdminOEmpleado])
 def  detallesPedido(request, id_pedido):
     detalles = DetallePedido.objects.filter(
         pedido_id=id_pedido
@@ -252,6 +245,8 @@ def  detallesPedido(request, id_pedido):
     return JsonResponse(list(detalles), safe=False)
 
 #12 lista de DetalleReceta por id_producto
+@api_view(['GET'])
+@permission_classes([EsAdminOEmpleado])
 def detallesReceta(request, id_producto):
     detalles = DetalleReceta.objects.filter(
         producto_id = id_producto
@@ -260,6 +255,8 @@ def detallesReceta(request, id_producto):
     return JsonResponse(list(detalles), safe=False)
 
 #13 cambiar estado del pedido a true
+@api_view(['PUT'])
+@permission_classes([EsAdminOEmpleado])
 def cambiarEstadoPedido(request, id_pedido):
     pedido = Pedido.objects.get(id=id_pedido)
     pedido.terminado= True
