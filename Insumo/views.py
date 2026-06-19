@@ -2,7 +2,11 @@ import json
 #esto es para el error de seguridad 
 from django.views.decorators.csrf import csrf_exempt
 from django.http import HttpResponse, JsonResponse
-from .models import ConsumoRealInsumo, DetallePedido, DetalleReceta, Insumo, Pedido, Producto
+#esto es para modificar el json del token 
+from rest_framework_simplejwt.views import TokenObtainPairView
+from Insumo.mi_token import MiToken
+#esto es para las views
+from .models import ConsumoRealInsumo, DetallePedido, DetalleReceta, Insumo, Pedido, Producto, Usuario
 #esto es para los permisos de los endpoints
 from rest_framework.decorators import api_view, permission_classes
 from .permisos import EsAdminOEmpleado
@@ -261,3 +265,31 @@ def cambiarEstadoPedido(request, id_pedido):
     pedido = Pedido.objects.get(id=id_pedido)
     pedido.terminado= True
     pedido.save
+
+
+#esto es para el token personalizado
+class MiTokenObtainPairView(TokenObtainPairView):
+    serializer_class = MiToken
+
+#14crear usuario
+@api_view(['POST'])
+@permission_classes([EsAdmin])
+def crearUsuario(request):
+
+    data = request.data
+    
+    username = data.get('username')
+    password = data.get('password')
+    rol = data.get('rol', 'EMPL')
+    if not username or not password:
+        return JsonResponse({'mensaje': 'username y password son obligatorios'}, status=400)
+    user = Usuario.objects.create_user(
+        username=username,
+        password=password,
+        rol=rol
+    )
+    return JsonResponse({
+        'id': user.id,
+        'username': user.username,
+        'rol': user.rol
+    }, status=201)

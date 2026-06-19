@@ -1,10 +1,9 @@
 from Insumo import views
 from django.contrib import admin
 from django.urls import path
-from rest_framework_simplejwt.views import (
-    TokenObtainPairView,
-    TokenRefreshView,
-)
+from rest_framework_simplejwt.views import TokenRefreshView
+from Insumo.views import MiTokenObtainPairView
+
 
 
 
@@ -23,7 +22,8 @@ urlpatterns = [
     path('pedidos/<int:id_pedido>/detalles/', views.detallesPedido),
     path('productos/<int:id_producto>/detalles-receta/', views.detallesReceta),
     #esto es para los usuarios
-    path('login/', TokenObtainPairView.as_view()),
-    path('refresh/', TokenRefreshView.as_view()),
+    path('login/', MiTokenObtainPairView.as_view()),
+    path('refresh/', TokenRefreshView.as_view(),name= 'token_refresh'),
+    path('usuarios/crear/', views.crearUsuario),
 
 ]
