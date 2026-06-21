@@ -25,8 +25,8 @@ SECRET_KEY = 'django-insecure-mdachrdm(z(=&9em%w+mp=_wi+p=g2w_7m@7l5$z1=y215spw5
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
 
-ALLOWED_HOSTS = ['127.0.0.1']
-
+ALLOWED_HOSTS = ['*','10.0.2.2']
+#'127.0.0.1','localhost','10.0.2.2','10.0.3.2'
 
 # Application definition
 
@@ -39,6 +39,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'Insumo',
     'rest_framework',
+    'rest_framework_simplejwt',
 ]
 
 MIDDLEWARE = [

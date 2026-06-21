@@ -4,11 +4,13 @@ from django.views.decorators.csrf import csrf_exempt
 from django.http import HttpResponse, JsonResponse
 #esto es para modificar el json del token 
 from rest_framework_simplejwt.views import TokenObtainPairView
+from rest_framework.permissions import AllowAny
+from rest_framework.decorators import api_view, permission_classes
 from Insumo.mi_token import MiToken
 #esto es para las views
 from .models import ConsumoRealInsumo, DetallePedido, DetalleReceta, Insumo, Pedido, Producto, Usuario
 #esto es para los permisos de los endpoints
-from rest_framework.decorators import api_view, permission_classes
+
 from .permisos import EsAdminOEmpleado
 from .permisos import EsAdmin
 

@@ -22,7 +22,7 @@ urlpatterns = [
     path('pedidos/<int:id_pedido>/detalles/', views.detallesPedido),
     path('productos/<int:id_producto>/detalles-receta/', views.detallesReceta),
     #esto es para los usuarios
-    path('login/', MiTokenObtainPairView.as_view()),
+    path('login/',MiTokenObtainPairView.as_view()),
     path('refresh/', TokenRefreshView.as_view(),name= 'token_refresh'),
     path('usuarios/crear/', views.crearUsuario),
 
