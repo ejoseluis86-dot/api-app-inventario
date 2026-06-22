@@ -1,4 +1,5 @@
 import json
+import traceback
 #esto es para el error de seguridad 
 from django.views.decorators.csrf import csrf_exempt
 from django.http import HttpResponse, JsonResponse
@@ -46,6 +47,8 @@ def modificarInsumo(request, id_insumo):
 
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=400)
+    
+
 @api_view(['POST'])
 @permission_classes([EsAdmin])
 @csrf_exempt
@@ -277,6 +280,8 @@ class MiTokenObtainPairView(TokenObtainPairView):
 @api_view(['POST'])
 @permission_classes([EsAdmin])
 def crearUsuario(request):
+ 
+ try:
 
     data = request.data
     
@@ -295,3 +300,6 @@ def crearUsuario(request):
         'username': user.username,
         'rol': user.rol
     }, status=201)
+ except Exception as e:
+        print(traceback.format_exc())
+        return JsonResponse({'error el usuario ya existe'}, status=500)
