@@ -79,3 +79,8 @@ class Usuario(AbstractUser):
         choices=ROLES,
         default='EMPL'
     )
+    
+    def save(self, *args, **kwargs):
+        if self.is_superuser:
+            self.rol = 'ADMIN'
+        super().save(*args, **kwargs)

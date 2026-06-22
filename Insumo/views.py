@@ -22,57 +22,52 @@ def listaInsumos(request):
     insumos = list(Insumo.objects.values())
     return JsonResponse(insumos, safe=False)
 
-#2 modificar Stock por id_insumo en la url
+#2 modificar insumo
 @api_view(['PUT'])
 @permission_classes([EsAdminOEmpleado])
-@csrf_exempt
 def modificarInsumo(request, id_insumo):
     try:
-        #sacamos Stock del Body
         data = json.loads(request.body)
-        #traemos el Insumo de la base de Datos
-        insumo = Insumo.objects.get(id = id_insumo)
-        #Actualizamos stock
-        insumo.stock = data['stock']
+        insumo = Insumo.objects.get(id=id_insumo)
+
+        insumo.nombre = data.get('nombre', insumo.nombre)
+        insumo.categoria = data.get('categoria', insumo.categoria)
+        insumo.stock = data.get('stock', insumo.stock)
+        insumo.ubicacion = data.get('ubicacion', insumo.ubicacion)
+
         insumo.save()
 
         return JsonResponse({
-            'insumo con id': insumo.id,
-            'mensaje': 'Stock actualizado correctamente',
-            'stock': insumo.stock
+            'mensaje': 'Insumo actualizado',
+            'id': insumo.id
         })
 
     except Insumo.DoesNotExist:
-        return JsonResponse({'error': 'Insumo no encontrado'}, status=404)
-
-    except Exception as e:
-        return JsonResponse({'error': str(e)}, status=400)
+        return JsonResponse({'error': 'No existe'}, status=404)
     
-
+#3 crear insumo
 @api_view(['POST'])
 @permission_classes([EsAdmin])
 @csrf_exempt
 def crearInsumo(request):
-    try:
-        data = json.loads(request.body)
-        insumo = Insumo.objects.create(
-        nombre=data['nombre'],
-        categoria=data['categoria'],
-        stock=data['stock'],
-        ubicacion=data['ubicacion']
-        )
-        return JsonResponse({
-            "id": insumo.id,
-            "nombre": insumo.nombre,
-            "categoria": insumo.categoria,
-            "stock": insumo.stock,
-            "ubicacion":insumo.ubicacion
-        }, status=200)
-    except Insumo.DoesNotExist:
-        return JsonResponse({'error': 'Insumo no encontrado'}, status=404)
-    except Exception as e:
-        return JsonResponse({'error': str(e)})
+
+    data = json.loads(request.body)
+    insumo = Insumo.objects.create(
+    nombre=data['nombre'],
+    categoria=data['categoria'],
+    stock=data['stock'],
+    ubicacion=data['ubicacion']
+    )
     
+    return JsonResponse({
+        "id": insumo.id,
+        "nombre": insumo.nombre,
+        "categoria": insumo.categoria,
+        "stock": insumo.stock,
+        "ubicacion":insumo.ubicacion
+        }, status=200)
+    
+
 #4 gregar un producto con detalles
 @api_view(['POST'])
 @permission_classes([EsAdminOEmpleado])
