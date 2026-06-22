@@ -53,65 +53,74 @@ def modificarInsumo(request, id_insumo):
 @permission_classes([EsAdmin])
 @csrf_exempt
 def crearInsumo(request):
-
-    data = json.loads(request.body)
-    insumo = Insumo.objects.create(
-    nombre=data['nombre'],
-    categoria=data['categoria'],
-    stock=data['stock'],
-    ubicacion=data['ubicacion']
-    )
-    return JsonResponse(
-    {
-        'id': insumo.id,
-        'mensaje': 'Insumo creado correctamente'
-    },
-    status=201
-    )
-
+    try:
+        data = json.loads(request.body)
+        insumo = Insumo.objects.create(
+        nombre=data['nombre'],
+        categoria=data['categoria'],
+        stock=data['stock'],
+        ubicacion=data['ubicacion']
+        )
+        return JsonResponse({
+            "id": insumo.id,
+            "nombre": insumo.nombre,
+            "categoria": insumo.categoria,
+            "stock": insumo.stock,
+            "ubicacion":insumo.ubicacion
+        }, status=200)
+    except Insumo.DoesNotExist:
+        return JsonResponse({'error': 'Insumo no encontrado'}, status=404)
+    except Exception as e:
+        return JsonResponse({'error': str(e)})
+    
 #4 gregar un producto con detalles
 @api_view(['POST'])
 @permission_classes([EsAdminOEmpleado])
 @csrf_exempt
 def crearProducto(request):
-    # Convertir el JSON recibido en el body a un diccionario Python
-    data = json.loads(request.body)
+    try:
+        print('si entro')
+        # Convertir el JSON recibido en el body a un diccionario Python
+        data = json.loads(request.body)
 
-    # Crear el producto en la base de datos
-    producto = Producto.objects.create(
-        nombre=data['nombre'],
-        precio=data['precio'],
-        categoria=data['categoria']
-    )
-
-    # Recorrer la lista de detalles enviada en el JSON
-    for detalle in data['detalles']:
-
-        # Buscar el insumo por su id
-        insumo = Insumo.objects.get(
-            id=detalle['insumo_id']
+        # Crear el producto en la base de datos
+        producto = Producto.objects.create(
+            nombre=data['nombre'],
+            precio=data['precio'],
+            categoria=data['categoria']
         )
 
-        # Crear un detalle de receta
-        DetalleReceta.objects.create(
-            # Relacionar con el producto recién creado
-            producto=producto,
+        # Recorrer la lista de detalles enviada en el JSON
+        for detalle in data['detalles']:
 
-            # Relacionar con el insumo encontrado
-            insumo=insumo,
+            # Buscar el insumo por su id
+            insumo = Insumo.objects.get(
+                id=detalle['insumo_id']
+            )
 
-            # Guardar la cantidad teórica
-            cantidadTeorica=detalle['cantidadTeorica']
+            # Crear un detalle de receta
+            DetalleReceta.objects.create(
+                # Relacionar con el producto recién creado
+                producto=producto,
+
+                # Relacionar con el insumo encontrado
+                insumo=insumo,
+
+                # Guardar la cantidad teórica
+                cantidadTeorica=detalle['cantidad_teorica']
+            )
+        # Devolver respuesta de éxito
+        return JsonResponse(
+            {
+                'id_producto': producto.id,
+                'mensaje': 'Producto creado correctamente'
+            },
+            status=201
         )
-    # Devolver respuesta de éxito
-    return JsonResponse(
-        {
-            'id_producto': producto.id,
-            'mensaje': 'Producto creado correctamente'
-        },
-        status=201
-    )
-
+    except Insumo.DoesNotExist:
+        return JsonResponse({'error': 'Producto no encontrado'}, status=404)
+    except Exception as e:
+        return JsonResponse({'error': str(e)})
 #5 lista de productoLite
 @api_view(['GET'])
 @permission_classes([EsAdminOEmpleado])
