@@ -67,8 +67,25 @@ def crearInsumo(request):
         "ubicacion":insumo.ubicacion
         }, status=200)
     
+# Eliminar insumo
+@api_view(['DELETE'])
+@permission_classes([EsAdmin])
+def eliminarInsumo(request, id_insumo):
+    try:
+        insumo = Insumo.objects.get(id=id_insumo)
+        insumo.delete()
 
-#4 gregar un producto con detalles
+        return JsonResponse({
+            'mensaje': 'Insumo eliminado'
+        })
+
+    except Insumo.DoesNotExist:
+        return JsonResponse(
+            {'error': 'No existe'},
+            status=404
+        )
+
+#5 Agregar un producto con detalles
 @api_view(['POST'])
 @permission_classes([EsAdminOEmpleado])
 @csrf_exempt
