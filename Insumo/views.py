@@ -15,6 +15,8 @@ from .models import ConsumoRealInsumo, DetallePedido, DetalleReceta, Insumo, Ped
 from .permisos import EsAdminOEmpleado
 from .permisos import EsAdmin
 
+from django.contrib.auth import get_user_model
+
 #1 Lista Get
 @api_view(['GET'])
 @permission_classes([EsAdminOEmpleado])
@@ -297,7 +299,7 @@ def cambiarEstadoPedido(request, id_pedido):
 class MiTokenObtainPairView(TokenObtainPairView):
     serializer_class = MiToken
 
-#14crear usuario
+#14 Crear usuario
 @api_view(['POST'])
 @permission_classes([EsAdmin])
 def crearUsuario(request):
@@ -309,11 +311,16 @@ def crearUsuario(request):
     username = data.get('username')
     password = data.get('password')
     rol = data.get('rol', 'EMPL')
+    nombre = data.get('nombre', '')
+    apellido = data.get('apellido', '')
+    
     if not username or not password:
         return JsonResponse({'mensaje': 'username y password son obligatorios'}, status=400)
     user = Usuario.objects.create_user(
         username=username,
         password=password,
+        first_name=nombre,
+        last_name=apellido,
         rol=rol
     )
     return JsonResponse({
@@ -324,3 +331,45 @@ def crearUsuario(request):
  except Exception as e:
         print(traceback.format_exc())
         return JsonResponse({'error el usuario ya existe'}, status=500)
+
+#15 Perfil del usuario    
+@api_view(['GET'])
+@permission_classes([EsAdminOEmpleado])
+def miPerfil(request):
+
+    print("ENTRÓ A miPerfil")
+    print("USER:", request.user)
+    print("AUTH:", request.user.is_authenticated)
+
+    usuario = request.user
+
+    return JsonResponse({
+        'id': usuario.id,
+        'username': usuario.username,
+        'nombre': usuario.first_name,
+        'apellido': usuario.last_name,
+        'rol': usuario.rol,
+    })
+
+#16 Editar perfil del usuario
+@api_view(['PUT'])
+@permission_classes([EsAdminOEmpleado])
+def modificarMiPerfil(request):
+
+    usuario = request.user
+    data = json.loads(request.body)
+
+    usuario.first_name = data.get('nombre', usuario.first_name)
+    usuario.last_name = data.get('apellido', usuario.last_name)
+
+    # opcional: cambiar username
+    if data.get('username'):
+        usuario.username = data.get('username')
+
+    usuario.save()
+
+    return JsonResponse({
+        'mensaje': 'Perfil actualizado correctamente'
+    })
+    
+        

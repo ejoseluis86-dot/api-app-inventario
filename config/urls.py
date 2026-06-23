@@ -26,5 +26,7 @@ urlpatterns = [
     path('login/',MiTokenObtainPairView.as_view()),
     path('refresh/', TokenRefreshView.as_view(),name= 'token_refresh'),
     path('usuarios/crear/', views.crearUsuario),
+    path('usuarios/miPerfil/', views.miPerfil),
+    path('usuarios/modificarMiPerfil/', views.modificarMiPerfil),
 
 ]
