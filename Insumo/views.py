@@ -89,7 +89,7 @@ def eliminarInsumo(request, id_insumo):
 
 #5 Agregar un producto con detalles
 @api_view(['POST'])
-@permission_classes([EsAdminOEmpleado])
+@permission_classes([EsAdmin])
 @csrf_exempt
 def crearProducto(request):
     try:
@@ -135,7 +135,48 @@ def crearProducto(request):
         return JsonResponse({'error': 'Producto no encontrado'}, status=404)
     except Exception as e:
         return JsonResponse({'error': str(e)})
+    
+
 #---------------------
+# modificar producto
+#----------------------
+@api_view(['PUT'])
+@permission_classes([EsAdmin])
+def modificarProducto(request, id_producto):
+    try:
+        data = json.loads(request.body)
+        producto = Producto.objects.get(id=id_producto)
+
+        producto.nombre = data.get('nombre', producto.nombre)
+        producto.precio = data.get('precio', producto.precio)
+        producto.categoria = data.get('categoria', producto.categoria)
+
+        producto.save()
+
+        return JsonResponse({
+            "mensaje": "Producto actualizado",
+            "id": producto.id
+        })
+
+    except Producto.DoesNotExist:
+        return JsonResponse({"error": "No existe"}, status=404)
+
+
+# ELIMINAR producto
+@api_view(['DELETE'])
+@permission_classes([EsAdmin])
+def eliminarProducto(request, id_producto):
+    try:
+        producto = Producto.objects.get(id=id_producto)
+        producto.delete()
+
+        return JsonResponse({
+            "mensaje": "Producto eliminado"
+        })
+
+    except Producto.DoesNotExist:
+        return JsonResponse({"error": "No existe"}, status=404)
+
 # lista de productoLite
 #----------------------
 @api_view(['GET'])
@@ -151,6 +192,28 @@ def listaProductos(request):
     )
 
     return JsonResponse(productos, safe= False)
+
+#---------------------
+# nueva lista de productos completos
+#----------------------
+@api_view(['GET'])
+@permission_classes([EsAdminOEmpleado])
+def listaProductosCompletos(request):
+
+    productos = Producto.objects.all()
+
+    data = []
+
+    for producto in productos:
+
+        data.append({
+            "id": producto.id,
+            "nombre": producto.nombre,
+            "precio": producto.precio,
+            "categoria": producto.categoria,
+        })
+
+    return JsonResponse(data, safe=False)
 
 #6 crear un consumo real
 @api_view(['POST'])
@@ -296,8 +359,7 @@ def detallesReceta(request, id_producto):
 def cambiarEstadoPedido(request, id_pedido):
     pedido = Pedido.objects.get(id=id_pedido)
     pedido.terminado= True
-    pedido.save
-
+    pedido.save()
 
 #esto es para el token personalizado
 class MiTokenObtainPairView(TokenObtainPairView):
