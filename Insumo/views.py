@@ -135,7 +135,9 @@ def crearProducto(request):
         return JsonResponse({'error': 'Producto no encontrado'}, status=404)
     except Exception as e:
         return JsonResponse({'error': str(e)})
-#5 lista de productoLite
+#---------------------
+# lista de productoLite
+#----------------------
 @api_view(['GET'])
 @permission_classes([EsAdminOEmpleado])
 def listaProductos(request):
@@ -148,7 +150,7 @@ def listaProductos(request):
         )
     )
 
-    return JsonResponse(productos, safe=False)
+    return JsonResponse(productos, safe= False)
 
 #6 crear un consumo real
 @api_view(['POST'])
@@ -182,19 +184,21 @@ def crearConsumo(request):
 @permission_classes([EsAdminOEmpleado])
 @csrf_exempt
 def crearPedido(request):
+    from datetime import datetime
+
     # Convertir el JSON recibido en el body a un diccionario Python
     data = json.loads(request.body)
-
+    #estoy parseando la fecha del json de formato ISO a data
+    fecha = datetime.fromisoformat(data['fecha'])
     # Crear el pedido en la base de datos
     pedido = Pedido.objects.create(
-        fecha=data['fecha'],
+        fecha= fecha,
         cliente=data['cliente'],
         usuario_id=data['usuario']
     )
 
     # Recorrer la lista de detalles enviada en el JSON esto talvez se modifique
     for detalle in data['detalles']:
-        print(detalle)
         # Crear un detalle de receta
         DetallePedido.objects.create(
             cantidad = detalle['cantidad'],
