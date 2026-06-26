@@ -17,14 +17,16 @@ from .permisos import EsAdmin
 
 from django.contrib.auth import get_user_model
 
-#1 Lista Get
+#1 Lista Get Insumos
 @api_view(['GET'])
 @permission_classes([EsAdminOEmpleado])
 def listaInsumos(request):
     insumos = list(Insumo.objects.values())
     return JsonResponse(insumos, safe=False)
 
-#2 modificar insumo
+#---------------------
+# Modificar insumo
+#---------------------
 @api_view(['PUT'])
 @permission_classes([EsAdminOEmpleado])
 def modificarInsumo(request, id_insumo):
@@ -46,8 +48,10 @@ def modificarInsumo(request, id_insumo):
 
     except Insumo.DoesNotExist:
         return JsonResponse({'error': 'No existe'}, status=404)
-    
-#3 crear insumo
+
+#-------------------------------------    
+# Crear insumo
+#-------------------------------------
 @api_view(['POST'])
 @permission_classes([EsAdmin])
 @csrf_exempt
@@ -68,8 +72,10 @@ def crearInsumo(request):
         "stock": insumo.stock,
         "ubicacion":insumo.ubicacion
         }, status=200)
-    
+
+#-------------------------------------    
 # Eliminar insumo
+#-------------------------------------
 @api_view(['DELETE'])
 @permission_classes([EsAdmin])
 def eliminarInsumo(request, id_insumo):
@@ -86,8 +92,9 @@ def eliminarInsumo(request, id_insumo):
             {'error': 'No existe'},
             status=404
         )
-
-#5 Agregar un producto con detalles
+#-------------------------------------
+# Agregar un producto con detalles
+#-------------------------------------
 @api_view(['POST'])
 @permission_classes([EsAdmin])
 @csrf_exempt
@@ -138,7 +145,7 @@ def crearProducto(request):
     
 
 #---------------------
-# modificar producto
+# Modificar producto
 #----------------------
 @api_view(['PUT'])
 @permission_classes([EsAdmin])
@@ -161,8 +168,9 @@ def modificarProducto(request, id_producto):
     except Producto.DoesNotExist:
         return JsonResponse({"error": "No existe"}, status=404)
 
-
+#---------------------
 # ELIMINAR producto
+#---------------------
 @api_view(['DELETE'])
 @permission_classes([EsAdmin])
 def eliminarProducto(request, id_producto):
@@ -177,7 +185,8 @@ def eliminarProducto(request, id_producto):
     except Producto.DoesNotExist:
         return JsonResponse({"error": "No existe"}, status=404)
 
-# lista de productoLite
+#----------------------
+# Lista de productos
 #----------------------
 @api_view(['GET'])
 @permission_classes([EsAdminOEmpleado])
@@ -187,7 +196,8 @@ def listaProductos(request):
         Producto.objects.values(
             'id',
             'nombre',
-            'precio'
+            'precio',
+            'categoria',
         )
     )
 
