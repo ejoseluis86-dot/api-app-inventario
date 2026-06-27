@@ -357,11 +357,20 @@ def  detallesPedido(request, id_pedido):
 @api_view(['GET'])
 @permission_classes([EsAdminOEmpleado])
 def detallesReceta(request, id_producto):
-    detalles = DetalleReceta.objects.filter(
-        producto_id = id_producto
-    ).values()
 
-    return JsonResponse(list(detalles), safe=False)
+    detalles = DetalleReceta.objects.filter(
+        producto_id=id_producto
+    )
+
+    data = []
+
+    for detalle in detalles:
+        data.append({
+            "insumo": detalle.insumo.nombre,
+            "cantidadTeorica": detalle.cantidadTeorica,
+        })
+
+    return JsonResponse(data, safe=False)
 
 #13 cambiar estado del pedido a true
 @api_view(['PUT'])
@@ -447,5 +456,41 @@ def modificarMiPerfil(request):
     return JsonResponse({
         'mensaje': 'Perfil actualizado correctamente'
     })
+
+
+#17 OBTENER PRODUCTO CON SU RECETA
+@api_view(['GET'])
+@permission_classes([EsAdminOEmpleado])
+def detalleProducto(request, id_producto):
+
+    try:
+        producto = Producto.objects.get(id=id_producto)
+
+        detalles = DetalleReceta.objects.filter(producto=producto)
+
+        lista_detalles = []
+
+        for detalle in detalles:
+            lista_detalles.append({
+                "id": detalle.id,
+                "cantidad_teorica": detalle.cantidadTeorica,
+                "insumo_id": detalle.insumo.id,
+                "producto_id": producto.id,
+                "nombre_insumo": detalle.insumo.nombre,
+            })
+
+        return JsonResponse({
+            "id": producto.id,
+            "nombre": producto.nombre,
+            "precio": producto.precio,
+            "categoria": producto.categoria,
+            "detalles": lista_detalles,
+        })
+
+    except Producto.DoesNotExist:
+        return JsonResponse(
+            {"error": "No existe"},
+            status=404,
+        )   
     
         
