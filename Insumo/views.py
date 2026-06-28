@@ -313,6 +313,27 @@ def listaProductosAdmin(request):
 
     return JsonResponse(data, safe=False)
 
+#-----------------------------------------
+# Boton para activar/desactivar productos
+#-----------------------------------------
+@api_view(['PUT'])
+@permission_classes([EsAdmin])
+def toggleProducto(request, id_producto):
+    try:
+        producto = Producto.objects.get(id=id_producto)
+
+        producto.activo = not producto.activo
+        producto.save()
+
+        return JsonResponse({
+            "id": producto.id,
+            "activo": producto.activo,
+            "mensaje": "Estado actualizado"
+        })
+
+    except Producto.DoesNotExist:
+        return JsonResponse({"error": "No existe"}, status=404)
+
 
 
 
