@@ -92,6 +92,19 @@ def eliminarInsumo(request, id_insumo):
             {'error': 'No existe'},
             status=404
         )
+        
+#-------------------------------------
+# Verificar si un producto ya existe
+#-------------------------------------        
+@api_view(['GET'])
+@permission_classes([EsAdminOEmpleado])
+def existeProducto(request, nombre):
+    existe = Producto.objects.filter(nombre__iexact=nombre).exists()
+
+    return JsonResponse({
+        "existe": existe
+    })        
+        
 #-------------------------------------
 # Agregar un producto con detalles
 #-------------------------------------
@@ -104,7 +117,16 @@ def crearProducto(request):
         # Convertir el JSON recibido en el body a un diccionario Python
         data = json.loads(request.body)
 
-        # Crear el producto en la base de datos
+        # VALIDAR DUPLICADOS 
+        if Producto.objects.filter(
+            nombre__iexact=data['nombre'].strip()
+        ).exists():
+            return JsonResponse(
+                {"error": "Ya existe un producto con ese nombre"},
+                status=400
+            )
+
+        # SI NO EXISTE, CREAR EL PRODUCTO
         producto = Producto.objects.create(
             nombre=data['nombre'],
             precio=data['precio'],
