@@ -226,17 +226,30 @@ def eliminarProducto(request, id_producto):
 @api_view(['GET'])
 @permission_classes([EsAdminOEmpleado])
 def listaProductos(request):
-    
-    productos = list(
-        Producto.objects.values(
-            'id',
-            'nombre',
-            'precio',
-            'categoria',
-        )
-    )
 
-    return JsonResponse(productos, safe= False)
+    productos = Producto.objects.all()
+
+    data = []
+
+    for producto in productos:
+        detalles = DetalleReceta.objects.filter(producto=producto)
+
+        data.append({
+            "id": producto.id,
+            "nombre": producto.nombre,
+            "precio": producto.precio,
+            "categoria": producto.categoria,
+            "detalles": [
+                {
+                    "id": d.id,
+                    "insumoId": d.insumo.id,
+                    "nombreInsumo": d.insumo.nombre,
+                    "cantidadTeorica": d.cantidadTeorica,
+                }
+                for d in detalles
+            ]
+        })
+    return JsonResponse(data, safe=False)
 
 #---------------------
 # nueva lista de productos completos
