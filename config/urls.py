@@ -19,6 +19,7 @@ urlpatterns = [
     path('productos/eliminar/<int:id_producto>/', views.eliminarProducto),
     path('productos/', views.listaProductos),
     path('productos/completos/', views.listaProductosCompletos),
+    path('productos/admin/', views.listaProductosAdmin),
     path('productos/<int:id_producto>/', views.detalleProducto,
 ),
     path('consumos/crear/', views.crearConsumo),

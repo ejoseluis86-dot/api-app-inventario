@@ -225,9 +225,9 @@ def eliminarProducto(request, id_producto):
             status=404,
         )
 
-#----------------------
-# Lista de productos
-#----------------------
+#-----------------------------------
+# Lista de productos para empleados
+#-----------------------------------
 @api_view(['GET'])
 @permission_classes([EsAdminOEmpleado])
 def listaProductos(request):
@@ -257,7 +257,7 @@ def listaProductos(request):
     return JsonResponse(data, safe=False)
 
 #---------------------
-# nueva lista de productos completos - oculta los inactivos
+# nueva lista de productos completos - oculta los inactivos para empleados
 #----------------------
 @api_view(['GET'])
 @permission_classes([EsAdminOEmpleado])
@@ -277,6 +277,47 @@ def listaProductosCompletos(request):
         })
 
     return JsonResponse(data, safe=False)
+
+
+
+#-----------------------------------------
+# Lista de todos los productos para admin
+#-----------------------------------------
+@api_view(['GET'])
+@permission_classes([EsAdmin])
+def listaProductosAdmin(request):
+
+    productos = Producto.objects.all()
+
+    data = []
+
+    for producto in productos:
+        detalles = DetalleReceta.objects.filter(producto=producto)
+
+        data.append({
+            "id": producto.id,
+            "nombre": producto.nombre,
+            "precio": producto.precio,
+            "categoria": producto.categoria,
+            "activo": producto.activo,  # 👈 CLAVE
+            "detalles": [
+                {
+                    "id": d.id,
+                    "insumoId": d.insumo.id,
+                    "nombreInsumo": d.insumo.nombre,
+                    "cantidadTeorica": d.cantidadTeorica,
+                }
+                for d in detalles
+            ]
+        })
+
+    return JsonResponse(data, safe=False)
+
+
+
+
+
+
 
 #6 crear un consumo real
 @api_view(['POST'])
