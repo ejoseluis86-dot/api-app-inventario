@@ -232,7 +232,7 @@ def eliminarProducto(request, id_producto):
 @permission_classes([EsAdminOEmpleado])
 def listaProductos(request):
 
-    productos = Producto.objects.filter(activo=True)
+    productos = Producto.objects.filter(activo=True).order_by('nombre')
 
     data = []
 
@@ -287,7 +287,7 @@ def listaProductosCompletos(request):
 @permission_classes([EsAdmin])
 def listaProductosAdmin(request):
 
-    productos = Producto.objects.all()
+    productos = Producto.objects.all().order_by('nombre')
 
     data = []
 
@@ -327,13 +327,11 @@ def toggleProducto(request, id_producto):
 
         return JsonResponse({
             "id": producto.id,
-            "activo": producto.activo,
-            "mensaje": "Estado actualizado"
+            "activo": producto.activo
         })
 
     except Producto.DoesNotExist:
         return JsonResponse({"error": "No existe"}, status=404)
-
 
 
 
