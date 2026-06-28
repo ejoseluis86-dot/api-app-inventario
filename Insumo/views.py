@@ -181,6 +181,19 @@ def modificarProducto(request, id_producto):
         producto.categoria = data.get('categoria', producto.categoria)
 
         producto.save()
+        
+        # eliminar receta vieja
+        DetalleReceta.objects.filter(producto=producto).delete()
+
+        # crear nueva receta
+        for detalle in data.get('detalles', []):
+            insumo = Insumo.objects.get(id=detalle['insumo_id'])
+
+            DetalleReceta.objects.create(
+                producto=producto,
+                insumo=insumo,
+                cantidadTeorica=detalle['cantidad_teorica']
+            )
 
         return JsonResponse({
             "mensaje": "Producto actualizado",
