@@ -204,21 +204,26 @@ def modificarProducto(request, id_producto):
         return JsonResponse({"error": "No existe"}, status=404)
 
 #---------------------
-# ELIMINAR producto
+# "ELIMINAR" producto - solo pasa de activo a inactivo 
 #---------------------
 @api_view(['DELETE'])
 @permission_classes([EsAdmin])
 def eliminarProducto(request, id_producto):
     try:
         producto = Producto.objects.get(id=id_producto)
-        producto.delete()
+
+        producto.activo = False
+        producto.save()
 
         return JsonResponse({
-            "mensaje": "Producto eliminado"
+            "mensaje": "Producto desactivado"
         })
 
     except Producto.DoesNotExist:
-        return JsonResponse({"error": "No existe"}, status=404)
+        return JsonResponse(
+            {"error": "No existe"},
+            status=404,
+        )
 
 #----------------------
 # Lista de productos
@@ -227,7 +232,7 @@ def eliminarProducto(request, id_producto):
 @permission_classes([EsAdminOEmpleado])
 def listaProductos(request):
 
-    productos = Producto.objects.all()
+    productos = Producto.objects.filter(activo=True)
 
     data = []
 
@@ -252,13 +257,13 @@ def listaProductos(request):
     return JsonResponse(data, safe=False)
 
 #---------------------
-# nueva lista de productos completos
+# nueva lista de productos completos - oculta los inactivos
 #----------------------
 @api_view(['GET'])
 @permission_classes([EsAdminOEmpleado])
 def listaProductosCompletos(request):
 
-    productos = Producto.objects.all()
+    productos = Producto.objects.filter(activo=True)
 
     data = []
 

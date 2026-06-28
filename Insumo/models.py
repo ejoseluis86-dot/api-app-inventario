@@ -19,10 +19,11 @@ class ConsumoRealInsumo(models.Model):
     )
 
 #clase 3
-class Producto (models.Model):
-    nombre = models.CharField(max_length= 100)
+class Producto(models.Model):
+    nombre = models.CharField(max_length=100)
     precio = models.DecimalField(max_digits=10, decimal_places=2)
     categoria = models.CharField(max_length=100)
+    activo = models.BooleanField(default=True)
 
 #clase 4
 class DetallePedido (models.Model):
