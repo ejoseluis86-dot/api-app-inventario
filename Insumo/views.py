@@ -45,9 +45,22 @@ def listaInsumos(request):
 def modificarInsumo(request, id_insumo):
     try:
         data = json.loads(request.body)
+
         insumo = Insumo.objects.get(id=id_insumo)
 
-        insumo.nombre = data.get('nombre', insumo.nombre)
+        nombre = data.get('nombre', insumo.nombre).strip()
+
+        # 🔒 VALIDACIÓN: evitar duplicados (EXCLUYENDO el mismo insumo)
+        if Insumo.objects.filter(
+            nombre__iexact=nombre
+        ).exclude(id=insumo.id).exists():
+            return JsonResponse(
+                {"error": "Ya existe un insumo con ese nombre"},
+                status=400
+            )
+
+        # 📝 ACTUALIZACIÓN
+        insumo.nombre = nombre
         insumo.categoria = data.get('categoria', insumo.categoria)
         insumo.stock = data.get('stock', insumo.stock)
         insumo.ubicacion = data.get('ubicacion', insumo.ubicacion)
@@ -57,10 +70,19 @@ def modificarInsumo(request, id_insumo):
         return JsonResponse({
             'mensaje': 'Insumo actualizado',
             'id': insumo.id
-        })
+        }, status=200)
 
     except Insumo.DoesNotExist:
-        return JsonResponse({'error': 'No existe'}, status=404)
+        return JsonResponse(
+            {'error': 'No existe el insumo'},
+            status=404
+        )
+
+    except Exception as e:
+        return JsonResponse(
+            {'error': 'Error interno del servidor'},
+            status=500
+        )
 
 #-------------------------------------    
 # Crear insumo
