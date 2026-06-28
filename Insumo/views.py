@@ -17,12 +17,25 @@ from .permisos import EsAdmin
 
 from django.contrib.auth import get_user_model
 
-#1 Lista Get Insumos
+#1 Lista Get Insumos para empleados
 @api_view(['GET'])
 @permission_classes([EsAdminOEmpleado])
 def listaInsumos(request):
-    insumos = list(Insumo.objects.values())
-    return JsonResponse(insumos, safe=False)
+    insumos = Insumo.objects.all().order_by("nombre")
+
+    data = []
+
+    for i in insumos:
+        data.append({
+            "id": i.id,
+            "nombre": i.nombre,
+            "categoria": i.categoria,
+            "stock": i.stock,
+            "ubicacion": i.ubicacion,
+            "activo": i.activo,
+        })
+
+    return JsonResponse(data, safe=False)
 
 #---------------------
 # Modificar insumo
@@ -58,40 +71,117 @@ def modificarInsumo(request, id_insumo):
 def crearInsumo(request):
 
     data = json.loads(request.body)
-    insumo = Insumo.objects.create(
-    nombre=data['nombre'],
-    categoria=data['categoria'],
-    stock=data['stock'],
-    ubicacion=data['ubicacion']
-    )
+
+    nombre = data['nombre'].strip()
     
+    # 🔥 VALIDACIÓN DE DUPLICADO (CORRECTA Y ÚNICA)
+    if Insumo.objects.filter(nombre__iexact=nombre).exists():
+        return JsonResponse(
+            {"error": "Ya existe un insumo con ese nombre"},
+            status=400
+        )
+
+    insumo = Insumo.objects.create(
+        nombre=nombre,
+        categoria=data['categoria'],
+        stock=data['stock'],
+        ubicacion=data['ubicacion'],
+        activo=True
+    )
+    print("INSUMO QUE LLEGA:", nombre)
     return JsonResponse({
         "id": insumo.id,
         "nombre": insumo.nombre,
         "categoria": insumo.categoria,
         "stock": insumo.stock,
-        "ubicacion":insumo.ubicacion
-        }, status=200)
+        "ubicacion": insumo.ubicacion
+    }, status=201)
 
 #-------------------------------------    
-# Eliminar insumo
+# Eliminar insumo / SÓLO DESACTIVAR
 #-------------------------------------
 @api_view(['DELETE'])
 @permission_classes([EsAdmin])
 def eliminarInsumo(request, id_insumo):
     try:
         insumo = Insumo.objects.get(id=id_insumo)
-        insumo.delete()
+        insumo.activo = False
+        insumo.save()
 
         return JsonResponse({
-            'mensaje': 'Insumo eliminado'
+            "mensaje": "Insumo desactivado"
         })
-
     except Insumo.DoesNotExist:
         return JsonResponse(
             {'error': 'No existe'},
             status=404
         )
+
+        
+#-------------------------------------
+# Lista de insumos para admin
+#-------------------------------------          
+@api_view(['GET'])
+@permission_classes([EsAdmin])
+def listaInsumosAdmin(request):
+    print("USER:", request.user)
+    print("AUTH:", request.user.is_authenticated)
+    insumos = Insumo.objects.all().order_by("nombre")
+
+    data = []
+    for i in insumos:
+        data.append({
+            "id": i.id,
+            "nombre": i.nombre,
+            "categoria": i.categoria,
+            "stock": i.stock,
+            "ubicacion": i.ubicacion,
+            "activo": i.activo,
+        })
+
+    return JsonResponse(data, safe=False)      
+        
+        
+#-------------------------------------
+# Toggle deshaibilitar insumo
+#-------------------------------------          
+@api_view(['PUT'])
+@permission_classes([EsAdmin])
+def toggleInsumo(request, id_insumo):
+
+    try:
+        insumo = Insumo.objects.get(id=id_insumo)
+
+        insumo.activo = not insumo.activo
+        insumo.save()
+
+        return JsonResponse({
+            "id": insumo.id,
+            "activo": insumo.activo
+        })
+
+    except Insumo.DoesNotExist:
+        return JsonResponse(
+            {"error": "No existe"},
+            status=404
+        )        
+
+#-------------------------------------
+# Verificar si un insumo ya existe
+#-------------------------------------
+@api_view(['GET'])
+@permission_classes([EsAdminOEmpleado])
+def existeInsumo(request, nombre):
+
+    existe = Insumo.objects.filter(
+        nombre__iexact=nombre.strip()
+    ).exists()
+
+    return JsonResponse({
+        "existe": existe
+    })
+
+
         
 #-------------------------------------
 # Verificar si un producto ya existe
@@ -242,7 +332,7 @@ def listaProductos(request):
         data.append({
             "id": producto.id,
             "nombre": producto.nombre,
-            "precio": producto.precio,
+            "precio": str(producto.precio),
             "categoria": producto.categoria,
             "detalles": [
                 {
@@ -272,7 +362,7 @@ def listaProductosCompletos(request):
         data.append({
             "id": producto.id,
             "nombre": producto.nombre,
-            "precio": producto.precio,
+            "precio": str(producto.precio),
             "categoria": producto.categoria,
         })
 
@@ -286,7 +376,7 @@ def listaProductosCompletos(request):
 @api_view(['GET'])
 @permission_classes([EsAdmin])
 def listaProductosAdmin(request):
-
+    print("ENTRÓ ADMIN PRODUCTOS")
     productos = Producto.objects.all().order_by('nombre')
 
     data = []
@@ -297,22 +387,21 @@ def listaProductosAdmin(request):
         data.append({
             "id": producto.id,
             "nombre": producto.nombre,
-            "precio": producto.precio,
+            "precio": str(producto.precio),
             "categoria": producto.categoria,
-            "activo": producto.activo,  # 👈 CLAVE
+            "activo": producto.activo,
             "detalles": [
                 {
                     "id": d.id,
-                    "insumoId": d.insumo.id,
-                    "nombreInsumo": d.insumo.nombre,
+                    "insumoId": d.insumo.id if d.insumo else None,
+                    "nombreInsumo": d.insumo.nombre if d.insumo else "SIN INSUMO",
                     "cantidadTeorica": d.cantidadTeorica,
                 }
                 for d in detalles
             ]
-        })
-
-    return JsonResponse(data, safe=False)
-
+    })
+    return JsonResponse(data, safe=False)       
+            
 #-----------------------------------------
 # Boton para activar/desactivar productos
 #-----------------------------------------
@@ -595,7 +684,7 @@ def detalleProducto(request, id_producto):
         return JsonResponse({
             "id": producto.id,
             "nombre": producto.nombre,
-            "precio": producto.precio,
+            "precio": str(producto.precio),
             "categoria": producto.categoria,
             "detalles": lista_detalles,
         })

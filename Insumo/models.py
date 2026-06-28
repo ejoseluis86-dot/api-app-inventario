@@ -1,10 +1,11 @@
 from django.db import models
 #clase 1
-class Insumo (models.Model):
+class Insumo(models.Model):
     nombre = models.CharField(max_length=100)
     categoria = models.CharField(max_length=100)
     stock = models.PositiveIntegerField()
     ubicacion = models.CharField(max_length=100)
+    activo = models.BooleanField(default=True)
     
 #clase 2
 class ConsumoRealInsumo(models.Model):
