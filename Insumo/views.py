@@ -343,24 +343,23 @@ def eliminarProducto(request, id_producto):
 @api_view(['GET'])
 @permission_classes([EsAdminOEmpleado])
 def listaProductos(request):
-
+    # Traemos solo los activos para empleados
     productos = Producto.objects.filter(activo=True).order_by('nombre')
-
     data = []
 
     for producto in productos:
         detalles = DetalleReceta.objects.filter(producto=producto)
-
         data.append({
             "id": producto.id,
             "nombre": producto.nombre,
-            "precio": str(producto.precio),
+            "precio": float(producto.precio), # 👈 Mandalo como float/número, es más limpio
             "categoria": producto.categoria,
+            "activo": producto.activo, # 👈 OBLIGATORIO: Faltaba este campo e interrumpía el mapeo
             "detalles": [
                 {
                     "id": d.id,
-                    "insumoId": d.insumo.id,
-                    "nombreInsumo": d.insumo.nombre,
+                    "insumoId": d.insumo.id if d.insumo else None,
+                    "nombreInsumo": d.insumo.nombre if d.insumo else "SIN INSUMO",
                     "cantidadTeorica": d.cantidadTeorica,
                 }
                 for d in detalles
@@ -380,17 +379,15 @@ def listaProductosCompletos(request):
     data = []
 
     for producto in productos:
-
         data.append({
             "id": producto.id,
             "nombre": producto.nombre,
             "precio": str(producto.precio),
             "categoria": producto.categoria,
+            "activo": producto.activo, # 👈 AGREGÁ ESTA LÍNEA AQUÍ
         })
 
     return JsonResponse(data, safe=False)
-
-
 
 #-----------------------------------------
 # Lista de todos los productos para admin
