@@ -5,6 +5,8 @@ from django.views.decorators.csrf import csrf_exempt
 from django.http import HttpResponse, JsonResponse
 #esto es para modificar el json del token 
 from rest_framework_simplejwt.views import TokenObtainPairView
+#esto es para asegurar que descuente el stock de los insumos si ocurre un error
+from django.db import transaction 
 from rest_framework.permissions import AllowAny
 from rest_framework.decorators import api_view, permission_classes
 from Insumo.mi_token import MiToken
@@ -476,41 +478,42 @@ def crearConsumo(request):
 #7 crear pedido
 @api_view(['POST'])
 @permission_classes([EsAdminOEmpleado])
-@csrf_exempt
 def crearPedido(request):
-    from datetime import datetime
-
-    # Convertir el JSON recibido en el body a un diccionario Python
-    data = json.loads(request.body)
-    #estoy parseando la fecha del json de formato ISO a data
-    fecha = datetime.fromisoformat(data['fecha'])
-    # Crear el pedido en la base de datos
-    pedido = Pedido.objects.create(
-        fecha= fecha,
-        cliente=data['cliente'],
-        usuario_id=data['usuario']
-    )
-
-    # Recorrer la lista de detalles enviada en el JSON esto talvez se modifique
-    for detalle in data['detalles']:
-        # Crear un detalle de receta
-        DetallePedido.objects.create(
-            cantidad = detalle['cantidad'],
-            precioUnitario =detalle['precio'],
-            descuento = detalle['descuento'],
-            pedido = pedido ,
-            producto_id = detalle['producto_id'],
-        )
-    # Devolver respuesta de éxito
-    return JsonResponse(
-        {
-            'id_pedido': pedido.id,
-            'mensaje': 'Pedido creado correctamente'
-        },
-        status=201
-    )
-
-
+    try:
+        with transaction.atomic():
+            data = request.data
+            # 1. Creamos el pedido (el usuario viene del token)
+            pedido = Pedido.objects.create(
+                fecha=data['fecha'], 
+                cliente=data['cliente'],
+                usuario=request.user,
+                terminado=False
+            )
+            
+            # 2. Procesamos cada producto y descontamos el stock TEÓRICO
+            for item in data['detalles']:
+                producto = Producto.objects.get(id=item['producto_id'])
+                recetas = DetalleReceta.objects.filter(producto=producto)
+                
+                for receta in recetas:
+                    insumo = receta.insumo
+                    # Descontamos cantidad teórica
+                    insumo.stock -= (item['cantidad'] * receta.cantidadTeorica)
+                    insumo.save()
+                
+                # 3. Guardamos el detalle
+                DetallePedido.objects.create(
+                    pedido=pedido,
+                    producto=producto,
+                    cantidad=item['cantidad'],
+                    precioUnitario=item['precioUnitario'],
+                    descuento=item.get('descuento', 0)
+                )
+            
+            return JsonResponse({'mensaje': 'Pedido creado y stock reservado', 'id': pedido.id}, status=201)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=400)
+    
 #8 lista de pedidosLite sin terminar cuyo atributo bool sea false
 @api_view(['GET'])
 @permission_classes([EsAdminOEmpleado])
@@ -593,13 +596,28 @@ def detallesReceta(request, id_producto):
 
     return JsonResponse(data, safe=False)
 
-#13 cambiar estado del pedido a true
+# 13 cambiar estado del pedido a true y descontar stock
 @api_view(['PUT'])
 @permission_classes([EsAdminOEmpleado])
 def cambiarEstadoPedido(request, id_pedido):
-    pedido = Pedido.objects.get(id=id_pedido)
-    pedido.terminado= True
-    pedido.save()
+    try:
+        with transaction.atomic():
+            pedido = Pedido.objects.get(id=id_pedido)
+            
+            # Buscamos si el empleado reportó extras en ConsumoRealInsumo
+            detalles = DetallePedido.objects.filter(pedido=pedido)
+            for detalle in detalles:
+                extras = ConsumoRealInsumo.objects.filter(detallePedido=detalle)
+                for extra in extras:
+                    insumo = extra.insumo
+                    insumo.stock -= extra.cantidadReal # Ajuste final
+                    insumo.save()
+            
+            pedido.terminado = True
+            pedido.save()
+            return JsonResponse({'mensaje': 'Pedido finalizado y ajustes realizados'})
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
 
 #esto es para el token personalizado
 class MiTokenObtainPairView(TokenObtainPairView):

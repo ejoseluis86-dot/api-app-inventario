@@ -3,6 +3,7 @@ from django.contrib import admin
 from django.urls import path
 from rest_framework_simplejwt.views import TokenRefreshView
 from Insumo.views import MiTokenObtainPairView
+from Insumo.views import cambiarEstadoPedido
 
 
 
@@ -28,6 +29,7 @@ urlpatterns = [
     path('pedidos/crear/', views.crearPedido),
     path('pedidos/sin-terminar/', views.pedidosSinTerminar),
     path('pedidos/terminados/', views.pedidosTerminados),
+    path('finalizar_pedido/<int:id_pedido>/', cambiarEstadoPedido, name='finalizar_pedido'),
     path('pedidos/<int:id_detalle>/consumos/', views.consumosDelDetalle),
     path('pedidos/<int:id_pedido>/detalles/', views.detallesPedido),
     path('productos/<int:id_producto>/detalles-receta/', views.detallesReceta),
