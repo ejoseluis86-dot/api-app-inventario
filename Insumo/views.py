@@ -714,4 +714,56 @@ def detalleProducto(request, id_producto):
             status=404,
         )   
     
+# 18 Obtener todos los usuarios para el Admin
+@api_view(['GET'])
+@permission_classes([EsAdmin])
+def listaUsuariosAdmin(request):
+    # Esto nos dirá quién eres para Django y qué rol detecta
+    print(f"DEBUG: Usuario autenticado -> {request.user}")
+    print(f"DEBUG: Es Staff? -> {request.user.is_staff}")
+    print(f"DEBUG: Atributos del usuario -> {vars(request.user) if hasattr(request.user, '__dict__') else 'No tiene dict'}")
+    usuarios = Usuario.objects.all().order_by('first_name')
+    data = []
+    for u in usuarios:
+        data.append({
+            'id': u.id,
+            'username': u.username,
+            'nombre': u.first_name,
+            'apellido': u.last_name,
+            'rol': u.rol,
+            'activo': u.is_active, # Campo nativo de Django
+        })
+    return JsonResponse(data, safe=False)
+
+# 19 Activar / Desactivar usuarios para el Admin
+@api_view(['PUT'])
+@permission_classes([EsAdmin])
+def toggleUsuario(request, id_usuario):
+    try:
+        user = Usuario.objects.get(id=id_usuario)
+        # No permitas que el admin se desactive a sí mismo por error
+        if user == request.user:
+            return JsonResponse({'error': 'No puedes desactivar tu propia cuenta'}, status=400)
+            
+        user.is_active = not user.is_active
+        user.save()
+        return JsonResponse({'id': user.id, 'activo': user.is_active})
+    except Usuario.DoesNotExist:
+        return JsonResponse({'error': 'Usuario no encontrado'}, status=404)        
+
+# 20 Editar usuarios para el Admin (solo nombre, apellido y rol)    
+@api_view(['PUT'])
+@permission_classes([EsAdmin])
+def editar_usuario_admin(request, id_usuario):
+    try:
+        user = Usuario.objects.get(id=id_usuario)
         
+        # Obtenemos los datos del request
+        user.first_name = request.data.get('nombre', user.first_name)
+        user.last_name = request.data.get('apellido', user.last_name)
+        user.rol = request.data.get('rol', user.rol)
+        
+        user.save()
+        return JsonResponse({'status': 'ok', 'message': 'Usuario actualizado'})
+    except Usuario.DoesNotExist:
+        return JsonResponse({'error': 'Usuario no encontrado'}, status=404)    

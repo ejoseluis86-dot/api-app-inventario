@@ -37,5 +37,9 @@ urlpatterns = [
     path('usuarios/crear/', views.crearUsuario),
     path('usuarios/miPerfil/', views.miPerfil),
     path('usuarios/modificarMiPerfil/', views.modificarMiPerfil),
+    # Rutas para el Panel de Gestión de Usuarios
+    path('usuarios/admin/listado/', views.listaUsuariosAdmin, name='lista-usuarios-admin'),
+    path('usuarios/admin/toggle/<int:id_usuario>/', views.toggleUsuario, name='toggle-usuario'),
+    path('usuarios/admin/editar/<int:id_usuario>/', views.editar_usuario_admin, name='editar-usuario-admin'),
 
 ]
