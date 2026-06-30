@@ -53,7 +53,7 @@ class Pedido(models.Model):
         on_delete=models.PROTECT
     )
     terminado= models.BooleanField(default=False)
-
+    descuento = models.DecimalField(max_digits=10, decimal_places=2, default=0.0)
 
 
 #clasea 6 

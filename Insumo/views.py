@@ -480,6 +480,7 @@ def crearConsumo(request):
 @permission_classes([EsAdminOEmpleado])
 def crearPedido(request):
     try:
+        print("DATOS RECIBIDOS:", request.data)
         with transaction.atomic():
             data = request.data
             # 1. Creamos el pedido (el usuario viene del token)
@@ -506,12 +507,13 @@ def crearPedido(request):
                     pedido=pedido,
                     producto=producto,
                     cantidad=item['cantidad'],
-                    precioUnitario=item['precioUnitario'],
+                    precioUnitario=item['precio'], # <--- CAMBIA 'precioUnitario' por 'precio'
                     descuento=item.get('descuento', 0)
                 )
             
             return JsonResponse({'mensaje': 'Pedido creado y stock reservado', 'id': pedido.id}, status=201)
     except Exception as e:
+        print("EL ERROR ES:", str(e))
         return JsonResponse({'error': str(e)}, status=400)
     
 #8 lista de pedidosLite sin terminar cuyo atributo bool sea false
@@ -567,15 +569,30 @@ def consumosDelDetalle(request, id_detalle):
 
     return JsonResponse(data, safe=False)
 
-#11 lista de DetallePedido por id_pedido
+# #11 lista de DetallePedido por id_pedido
 @api_view(['GET'])
 @permission_classes([EsAdminOEmpleado])
-def  detallesPedido(request, id_pedido):
-    detalles = DetallePedido.objects.filter(
-        pedido_id=id_pedido
-    ).values()
-
-    return JsonResponse(list(detalles), safe=False)
+def detallesPedido(request, id_pedido):
+    try:
+        pedido = Pedido.objects.get(id=id_pedido)
+        detalles = DetallePedido.objects.filter(pedido=pedido)
+        
+        data = []
+        for d in detalles:
+            data.append({
+                "id": d.id,
+                "cantidad": d.cantidad,
+                "precioUnitario": d.precioUnitario,
+                "descuento_item": d.descuento, # Tu descuento de línea si usas
+                "pedido_id": d.pedido_id,
+                "producto_id": d.producto.id,
+                "producto_nombre": d.producto.nombre,
+                # 💡 LEEMOS EL DESCUENTO DEL MODELO PEDIDO:
+                "descuento_general": float(pedido.descuento) 
+            })
+        return JsonResponse(data, safe=False)
+    except Pedido.DoesNotExist:
+        return JsonResponse({'error': 'No existe'}, status=404)
 
 #12 lista de DetalleReceta por id_producto
 @api_view(['GET'])
@@ -604,20 +621,60 @@ def cambiarEstadoPedido(request, id_pedido):
         with transaction.atomic():
             pedido = Pedido.objects.get(id=id_pedido)
             
-            # Buscamos si el empleado reportó extras en ConsumoRealInsumo
+            # Si el pedido ya está terminado, no hacemos nada
+            if pedido.terminado:
+                return JsonResponse({'error': 'El pedido ya fue finalizado anteriormente'}, status=400)
+
             detalles = DetallePedido.objects.filter(pedido=pedido)
-            for detalle in detalles:
-                extras = ConsumoRealInsumo.objects.filter(detallePedido=detalle)
-                for extra in extras:
-                    insumo = extra.insumo
-                    insumo.stock -= extra.cantidadReal # Ajuste final
-                    insumo.save()
             
+            for detalle in detalles:
+                # Obtenemos la cantidad pedida de este producto
+                cantidad_producto = detalle.cantidad
+                
+                # Buscamos los consumos reales reportados para este detalle
+                extras = ConsumoRealInsumo.objects.filter(detallePedido=detalle)
+                
+                for extra in extras:
+                    # Buscamos la receta para saber cuánto era lo "teórico"
+                    try:
+                        receta = DetalleReceta.objects.get(producto=detalle.producto, insumo=extra.insumo)
+                    except DetalleReceta.DoesNotExist:
+                        continue # O manejar error si la receta no existe
+
+                    teorico_total = cantidad_producto * receta.cantidadTeorica
+                    
+                    # Calculamos la diferencia: lo que se consumió real vs lo que ya se descontó
+                    diferencia = extra.cantidadReal - teorico_total
+                    
+                    if diferencia != 0:
+                        insumo = extra.insumo
+                        
+                        # VALIDACIÓN DE SEGURIDAD (Paso 1 del que hablábamos)
+                        # Si diferencia es positiva (usamos más de lo previsto), verificamos stock
+                        if diferencia > 0:
+                            if insumo.stock < diferencia:
+                                return JsonResponse(
+                                    {'error': f"Stock insuficiente para {insumo.nombre}. Faltan {diferencia - insumo.stock} unidades."}, 
+                                    status=400
+                                )
+                            insumo.stock -= diferencia
+                        
+                        # Si diferencia es negativa (ahorramos insumo), devolvemos al stock
+                        else:
+                            insumo.stock += abs(diferencia)
+                        
+                        insumo.save()
+            
+            # Marcamos como terminado
             pedido.terminado = True
             pedido.save()
-            return JsonResponse({'mensaje': 'Pedido finalizado y ajustes realizados'})
+            
+            return JsonResponse({'mensaje': 'Pedido finalizado y ajustes realizados con éxito'})
+            
+    except Pedido.DoesNotExist:
+        return JsonResponse({'error': 'Pedido no encontrado'}, status=404)
     except Exception as e:
-        return JsonResponse({'error': str(e)}, status=500)
+        return JsonResponse({'error': f"Error crítico al finalizar: {str(e)}"}, status=500)
 
 #esto es para el token personalizado
 class MiTokenObtainPairView(TokenObtainPairView):
